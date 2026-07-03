@@ -583,87 +583,113 @@ td{padding:5px 6px;border-bottom:1px solid var(--line)}
 </div>
 <div class="card section"><div class="lbl">Log</div><div class="logs" id="logs"></div></div>
 <script>
-function f(n,d){return (n==null||isNaN(n))?'\\u2013\\u2013':Number(n).toFixed(d==null?2:d)}
-function usd(n){return (n==null||isNaN(n))?'\\u2013\\u2013':(n<0?'-$':'$')+Math.abs(n).toFixed(2)}
+function f(n,d){return (n==null||isNaN(n))?'–':Number(n).toFixed(d==null?2:d)}
+function usd(n){return (n==null||isNaN(n))?'–':(n<0?'-$':'$')+Math.abs(n).toFixed(2)}
 function cls(n){return n==null?'dim':(n>=0?'pos':'neg')}
 function esc(s){return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]})}
 async function tick(){
  try{
   var r=await fetch('/api/status');var s=await r.json();
   var b='<span class="badge '+(s.mode==='LIVE'?'live':'paper')+'">'+s.mode+'</span>';
-  if(s.halted)b+=' <span class="badge halt">ENTRIES HALTED'+(s.haltReason?' \\u00b7 '+esc(s.haltReason):'')+' </span>';
+  if(s.halted)b+=' <span class="badge halt">ENTRIES HALTED'+(s.haltReason?' · '+esc(s.haltReason):'')+'</span>';
   document.getElementById('badges').innerHTML=b;
   var sm='';
   sm+='<div class="card"><div class="lbl">Equity ('+(s.mode==='PAPER'?'paper':'live')+')</div><div class="big">'+usd(s.equity)+'</div></div>';
   sm+='<div class="card"><div class="lbl">Day P&L</div><div class="big '+cls(s.dayPnl)+'">'+usd(s.dayPnl)+'</div></div>';
   sm+='<div class="card"><div class="lbl">Cash</div><div class="big">'+usd(s.cash)+'</div></div>';
   var st=s.stats;
-  sm+='<div class="card"><div class="lbl">Last 20 trades</div><div class="row"><span>Win rate</span><span>'+(st.winRate==null?'\\u2013\\u2013':f(st.winRate*100,0)+'%')+'</span></div><div class="row"><span>Profit factor</span><span>'+f(st.pf)+'</span></div><div class="row"><span>Total closed</span><span>'+st.trades+'</span></div><div class="row"><span>Net P&L all-time</span><span class="'+cls(st.netUsd)+'">'+usd(st.netUsd)+'</span></div></div>';
+  sm+='<div class="card"><div class="lbl">Last 20 trades</div><div class="row"><span>Win rate</span><span>'+(st.winRate==null?'–':f(st.winRate*100,0)+'%')+'</span></div><div class="row"><span>Profit factor</span><span>'+f(st.pf)+'</span></div><div class="row"><span>Total closed</span><span>'+st.trades+'</span></div><div class="row"><span>Net P&L all-time</span><span class="'+cls(st.netUsd)+'">'+usd(st.netUsd)+'</span></div></div>';
   document.getElementById('summary').innerHTML=sm;
   var ph='';
   s.pairs.forEach(function(p){
    var fl=p.flow, w=(fl&&fl.score!=null)?fl.score:null;
    ph+='<div class="card"><div class="row"><b>'+p.pair+'</b><span>'+f(p.price)+'</span></div>';
-   ph+='<div class="row"><span class="dim">Regime</span><span>'+esc(p.regime||'\\u2013\\u2013')+'</span></div>';
-   if(p.ind){ph+='<div class="row"><span class="dim">RSI</span><span>'+f(p.ind.rsi,0)+'</span></div><div class="row"><span class="dim">MACD hist</span><span class="'+cls(p.ind.macdHist)+'">'+f(p.ind.macdHist,4)+'</span></div><div class="row"><span class="dim">ATR %</span><span>'+f(p.ind.atrPct*100,2)+'%</span></div>';}
-   ph+='<div class="lbl" style="margin-top:8px">Flow (whale tape + book)</div>';
-   if(w==null){ph+='<div class="dim">\\u2013\\u2013 no data yet</div>';}
-   else{var pct=Math.abs(w)*50;var left=w>=0?'50%':(50-pct)+'%';
-     ph+='<div class="bar"><i style="left:'+left+';width:'+pct+'%;background:'+(w>=0?'var(--grn)':'var(--red)')+'" ></i></div>';
-     ph+='<div class="row"><span class="dim">score '+f(w)+'</span><span class="dim">'+fl.whalePrints+' whale prints / 30m</span></div>';
-     ph+='<div class="row"><span class="pos">buys '+usd(fl.whaleBuyUsd)+'</span><span class="neg">sells '+usd(fl.whaleSellUsd)+'</span></div>';}
-   if(p.whaleTape&&p.whaleTape.length){ph+='<div class="lbl" style="margin-top:8px">Whale tape</div>';p.whaleTape.forEach(function(t){ph+='<div class="whale"><span class="'+(t.side==='b'?'pos':'neg')+' ">'+(t.side==='b'?'BUY':'SELL')+' '+usd(t.usd)+'</span><span class="dim">@ '+f(t.price)+'</span></div>';});}
-   if(p.err)ph+='<div class="neg" style="margin-top:6px;font-size:11px">err: '+esc(p.err)+'</div>';
+   ph+='<div class="row"><span class="dim">Regime</span><span>'+esc(p.regime||'–')+'</span></div>';
+   if(p.ind){ph+='<div class="row"><span class="dim">RSI</span><span>'+f(p.ind.rsi,0)+'</span></div><div class="row"><span class="dim">MACD hist</span><span>'+f(p.ind.macdHist)+'</span></div>'}
+   ph+='<div class="row"><span class="dim">Flow</span><span class="'+cls(w)+'">'+f(w)+'</span></div>';
+   if(p.whaleTape.length)ph+='<div class="lbl" style="margin-top:8px">Whale tape (last 8)</div>'+p.whaleTape.map(x=>'<div class="whale"><span>'+x.side+'</span><span>$'+f(x.usd,0)+'</span><span class="dim">'+f(x.price)+'</span></div>').join('');
+   if(p.err)ph+='<div style="color:var(--red);margin-top:6px;font-size:11px">⚠ '+esc(p.err)+'</div>';
    ph+='</div>';
   });
   document.getElementById('pairs').innerHTML=ph;
-  if(s.positions.length){var t='<table><tr><th>Pair</th><th>Mode</th><th>Vol</th><th>Entry</th><th>Mark</th><th>Stop</th><th>uP&L</th></tr>';
-   s.positions.forEach(function(p){t+='<tr><td>'+p.pair+(p.adopted?' <span class="dim">(adopted)</span>':'')+' </td><td>'+p.mode+'</td><td>'+p.vol+'</td><td>'+f(p.entry)+'</td><td>'+f(p.mark)+'</td><td>'+f(p.stop)+'</td><td class="'+cls(p.uPnl)+'">'+usd(p.uPnl)+'</td></tr>';});
-   document.getElementById('positions').innerHTML=t+'</table>';
-  }else{document.getElementById('positions').innerHTML='<span class="dim">none \\u2014 waiting for a signal that clears the filters</span>';}
-  if(s.closed.length){var c='<table><tr><th>Pair</th><th>Mode</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Reason</th></tr>';
-   s.closed.forEach(function(x){c+='<tr><td>'+x.pair+'</td><td>'+x.mode+'</td><td>'+f(x.entry)+'</td><td>'+f(x.exit)+'</td><td class="'+cls(x.pnlUsd)+'">'+usd(x.pnlUsd)+'</td><td class="dim">'+esc(x.reason)+'</td></tr>';});
-   document.getElementById('closed').innerHTML=c+'</table>';
-  }else{document.getElementById('closed').innerHTML='<span class="dim">no closed trades yet</span>';}
-  var a=s.adapt;
-  document.getElementById('adapt').innerHTML='<div class="row"><span>Risk scale</span><span>'+f(a.riskScale*100,0)+'%</span></div><div class="row"><span>Flow min (entry gate)</span><span>'+f(a.flowMin)+'</span></div><div class="row"><span>RSI OS / OB</span><span>'+f(a.rsiOS,0)+' / '+f(a.rsiOB,0)+'</span></div><div class="row"><span>Stop \\u00d7 ATR</span><span>'+f(a.stopMult,1)+'</span></div><div class="row"><span>Trail \\u00d7 ATR</span><span>'+f(a.trailMult,1)+'</span></div>';
-  var g=s.cfg;
-  document.getElementById('cfg').innerHTML='<div class="row"><span>Pairs</span><span>'+g.pairs.join(', ')+'</span></div><div class="row"><span>Risk / trade</span><span>'+f(g.riskPerTrade*100,1)+'%</span></div><div class="row"><span>Daily max loss</span><span>'+f(g.dailyMaxLoss*100,1)+'%</span></div><div class="row"><span>Whale threshold</span><span>'+usd(g.whaleUsd)+'</span></div><div class="row"><span>Max positions</span><span>'+g.maxPositions+'</span></div><div class="row"><span>Fee est / side</span><span>'+f(g.feePct*100,2)+'%</span></div>';
-  document.getElementById('logs').textContent=s.logs.map(function(l){return new Date(l.t).toISOString().slice(11,19)+'  '+l.msg}).join('\\n');
- }catch(e){document.getElementById('badges').innerHTML='<span class="badge halt">DASH FETCH ERROR</span>';}
+  var pos='';
+  if(!s.positions.length)pos='<div class="dim">none</div>';
+  else pos+='<table><tr><th>Pair</th><th>Entry</th><th>Mark</th><th>Vol</th><th>P&L</th></tr>'+s.positions.map(p=>'<tr><td>'+p.pair+'</td><td>'+f(p.entry)+'</td><td>'+f(p.mark)+'</td><td>'+f(p.vol,4)+'</td><td class="'+cls(p.uPnl)+'">'+usd(p.uPnl)+'</td></tr>').join('')+'</table>';
+  document.getElementById('positions').innerHTML=pos;
+  var cls_tbl='';
+  if(!s.closed.length)cls_tbl='<div class="dim">none</div>';
+  else cls_tbl+='<table><tr><th>Pair</th><th>Mode</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Reason</th></tr>'+s.closed.map(t=>'<tr><td>'+t.pair+'</td><td>'+t.mode+'</td><td>'+f(t.entry)+'</td><td>'+f(t.exit)+'</td><td class="'+cls(t.pnlUsd)+'">'+usd(t.pnlUsd)+'</td><td>'+esc(t.reason)+'</td></tr>').join('')+'</table>';
+  document.getElementById('closed').innerHTML=cls_tbl;
+  var adp='';
+  adp+='<div class="row"><span>Risk scale</span><span>'+f(s.adapt.riskScale*100,0)+'%</span></div>';
+  adp+='<div class="row"><span>RSI O/S</span><span>'+f(s.adapt.rsiOS,0)+'</span></div>';
+  adp+='<div class="row"><span>RSI O/B</span><span>'+f(s.adapt.rsiOB,0)+'</span></div>';
+  adp+='<div class="row"><span>Flow min</span><span>'+f(s.adapt.flowMin,2)+'</span></div>';
+  adp+='<div class="row"><span>Stop mult</span><span>'+f(s.adapt.stopMult,1)+'</span></div>';
+  adp+='<div class="row"><span>Trail mult</span><span>'+f(s.adapt.trailMult,2)+'</span></div>';
+  document.getElementById('adapt').innerHTML=adp;
+  var cfg='';
+  cfg+='<div class="row"><span>Pairs</span><span>'+esc(s.cfg.pairs.join(', '))+'</span></div>';
+  cfg+='<div class="row"><span>Risk/trade</span><span>'+f(s.cfg.riskPerTrade*100,1)+'%</span></div>';
+  cfg+='<div class="row"><span>Max loss/day</span><span>'+f(s.cfg.dailyMaxLoss*100,1)+'%</span></div>';
+  cfg+='<div class="row"><span>Max positions</span><span>'+s.cfg.maxPositions+'</span></div>';
+  cfg+='<div class="row"><span>Whale $</span><span>'+usd(s.cfg.whaleUsd)+'</span></div>';
+  cfg+='<div class="row"><span>Taker fee</span><span>'+f(s.cfg.feePct*100,2)+'%</span></div>';
+  document.getElementById('cfg').innerHTML=cfg;
+  var lg='';
+  s.logs.forEach(function(l){lg+='['+new Date(l.t).toISOString().replace('T',' ').slice(0,19)+'] '+esc(l.msg)+'\n'});
+  document.getElementById('logs').innerHTML=lg;
+ }
+ catch(e){console.error(e);document.body.innerHTML='<div style="color:red;padding:20px">Dashboard error: '+esc(e.message)+'</div>'}
 }
-tick();setInterval(tick,10000);
-</script></body></html>`;
+tick();setInterval(tick,3000);
+</script>
+</body></html>`;
 
-const server = http.createServer((req, res) => {
-  if (req.url === '/api/status') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(snapshot()));
-  } else {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end(DASH_HTML);
-  }
-});
+let server;
 
-/* -------------------------------- boot ----------------------------------- */
-async function boot() {
-  log(`booting — mode ${CFG.live ? 'LIVE' : 'PAPER'} | pairs ${CFG.pairs.join(', ')} | risk ${(CFG.riskPerTrade * 100).toFixed(1)}%/trade | whale ≥ $${CFG.whaleUsd}`);
-  if (CFG.live && (!CFG.key || !CFG.secret)) {
-    CFG.live = false;
-    log('LIVE=true but no API keys found — falling back to PAPER mode', 'warn');
-  }
-  if (!CFG.live) log('PAPER mode: fills are simulated at market price with slippage + fee estimates. No real orders are placed.');
-  loadState();
+async function start() {
   await loadPairMeta();
-  for (const p of CFG.pairs) { await refreshCandles(p); computeAnalytics(p); await sleep(800); }
+  loadState();
   if (CFG.live) await reconcileLive();
-  server.listen(CFG.port, () => log(`dashboard live on port ${CFG.port}`));
-  // main loop
-  (async () => { for (;;) { await loop(); await sleep(CFG.loopMs); } })();
-  setInterval(saveState, 60_000);
+
+  server = http.createServer(async (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(200);
+      res.end();
+      return;
+    }
+
+    if (req.url === '/') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(DASH_HTML);
+      return;
+    }
+
+    if (req.url === '/api/status') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(snapshot()));
+      return;
+    }
+
+    res.writeHead(404);
+    res.end('not found');
+  });
+
+  server.listen(CFG.port, '0.0.0.0', () => {
+    log(`dashboard listening on :${CFG.port}`);
+  });
+
+  log('starting trading loop…');
+  setInterval(loop, CFG.loopMs);
+  await loop();
 }
 
-process.on('SIGTERM', () => { log('SIGTERM — saving state'); saveState(); process.exit(0); });
-process.on('SIGINT', () => { saveState(); process.exit(0); });
-
-boot().catch(e => { log('FATAL boot error: ' + e.message, 'warn'); process.exit(1); });
+start().catch(e => {
+  log('fatal: ' + e.message, 'error');
+  process.exit(1);
+});
